@@ -1,6 +1,7 @@
 package com.gpv.springtareas.demo.controladores;
 
 import com.gpv.springtareas.demo.dto.UsuarioDTO;
+import com.gpv.springtareas.demo.entities.Tarea;
 import com.gpv.springtareas.demo.entities.Usuario;
 import com.gpv.springtareas.demo.services.TareaService;
 import com.gpv.springtareas.demo.services.UsuarioService;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -61,10 +63,10 @@ public class UserController {
         }       
     }
     
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}/tareas")
-    public ResponseEntity<?> findTareasDeUnUser(@PathVariable String id){
+    @RequestMapping(method = RequestMethod.GET, value = "/{id}/contareas")
+    public ResponseEntity<?> findUserConTareas(@PathVariable String id){
         Usuario user =  us.buscarUsuarioConTareas(id);
-        return ResponseEntity.ok(user.getListaTareas());   
+        return ResponseEntity.ok(user);   
     }
     
     @RequestMapping(method = RequestMethod.POST, value = "/")
@@ -95,4 +97,58 @@ public class UserController {
         }       
     }
     
+    @RequestMapping(method = RequestMethod.PUT, value = "/{id}")
+    public ResponseEntity<?> update(@PathVariable("id") String id, @RequestBody UsuarioDTO usuario){
+        logger.info("update");
+        Usuario user =  us.buscarUsuario(id);
+        if(user == null){
+            Map<String, String> map = new HashMap<>();
+            map.put("Error", "Usuario " + id + " no encontrado");
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(map);
+        }else{
+            user.setEmail(usuario.getEmail());
+            user.setPassword(usuario.getPassword());
+            user.setNombre(usuario.getNombre());
+            user = us.addUsuario(user);
+            UsuarioDTO uDto = UsuarioDTO.geUsuariotDtoFromUsuario(user);
+            
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(uDto);
+        }       
+    }
+    
+    
+    //Métodos para operar con las tareas
+    @RequestMapping(value = "/tareas/{id}", method = RequestMethod.POST)
+    public Tarea postTarea(@PathVariable("id") String idUsuario, @RequestBody Tarea tarea){
+        Usuario usuario = us.buscarUsuarioConTareas(idUsuario);
+        tarea.setUsuario(usuario);
+        usuario.getListaTareas().add(tarea);
+        usuario = us.addUsuario(usuario);  
+        return usuario.getListaTareas().get(usuario.getListaTareas().size()-1);
+    }
+    
+    @RequestMapping(value = "/tareas/{idUsuario}/{idTarea}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteTarea(@PathVariable("idUsuario") String idUsuario, @PathVariable("idTarea") Integer idTarea){
+        Usuario usuario = us.buscarUsuarioConTareas(idUsuario);
+        boolean eliminado = false;
+        for(int i = 0; i < usuario.getListaTareas().size() && eliminado == false; i++){
+            if(usuario.getListaTareas().get(i).getIdTarea().equals(idTarea)){
+                usuario.getListaTareas().remove(i);
+                eliminado = true;
+            }
+        }
+        
+        if(eliminado = false){
+            Map<String, String> map = new HashMap<>();
+            map.put("Error", "Tarea " + idTarea + " no encontrado");
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(map);
+        }
+        else{
+            us.addUsuario(usuario);
+            return ResponseEntity.status(HttpStatus.ACCEPTED).build(); 
+        }  
+    }
 }

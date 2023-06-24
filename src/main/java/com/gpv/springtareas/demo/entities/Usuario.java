@@ -22,7 +22,7 @@ public class Usuario implements Serializable{
     private String email;
     private String nombre;
 
-    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST}, orphanRemoval = true)
     private List<Tarea> listaTareas = new ArrayList<>();
     
     //Constructores
@@ -35,7 +35,6 @@ public class Usuario implements Serializable{
         this.email = email;
         this.nombre = nombre;
     }
-    
     
     //Getters y setters
     public String getIdUsuario() {
