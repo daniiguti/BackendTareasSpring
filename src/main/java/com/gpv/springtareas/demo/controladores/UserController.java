@@ -151,4 +151,34 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.ACCEPTED).build(); 
         }  
     }
+    
+    @RequestMapping(value = "/tareas/{idUsuario}/{idTarea}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updateTarea(@PathVariable("idUsuario") String idUsuario, @PathVariable("idTarea") Integer idTarea, @RequestBody Tarea tarea){
+        logger.info("updateTarea");
+        Usuario usuario = us.buscarUsuarioConTareas(idUsuario);
+        Tarea aux = null;
+        boolean encontrado = false;
+        for(int i = 0; i < usuario.getListaTareas().size() && encontrado == false; i++){
+            if(usuario.getListaTareas().get(i).getIdTarea().equals(idTarea)){
+                aux = usuario.getListaTareas().remove(i);
+                encontrado = true;
+            }
+        }
+        
+        if(encontrado = false){
+            Map<String, String> map = new HashMap<>();
+            map.put("Error", "Tarea " + idTarea + " no encontrado");
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(map);
+        }
+        else{
+            aux.setTitle(tarea.getTitle());
+            aux.setDescripcion(tarea.getDescripcion());
+            aux.setDia(tarea.getDia());
+            aux.setStatus(tarea.getStatus());
+            usuario.addTarea(aux);
+            us.addUsuario(usuario);
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(aux); 
+        } 
+    }
 }
